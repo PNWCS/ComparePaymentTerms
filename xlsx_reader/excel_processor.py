@@ -172,29 +172,8 @@ def get_qb_payment_terms() -> list[PaymentTerm]:
 def compare_payment_terms(
     excel_terms: list[PaymentTerm], qb_terms: list[PaymentTerm]
 ) -> TermComparison:
-    """Compare Excel and QuickBooks payment terms by ID.
-
-    Args:
-        excel_terms (list[PaymentTerm]): Payment terms from Excel file.
-            Example: [PaymentTerm(name="Net 30", term_id=30),
-                     PaymentTerm(name="Net 60", term_id=60)]
-        qb_terms (list[PaymentTerm]): Payment terms from QuickBooks.
-            Example: [PaymentTerm(name="Net 30", term_id=30),
-                     PaymentTerm(name="2% 10 Net 30", term_id=10)]
-
-    Returns:
-        TermComparison: A dataclass containing comparison results:
-            - same_id_diff_name (list[tuple[str, str, int]]): Terms with matching IDs but
-              different names. Each tuple contains (excel_name, qb_name, term_id).
-              Example: [("Net 15", "Net 15 Days", 15)]
-            - only_in_excel (list[PaymentTerm]): Terms present in Excel but not in QB.
-              These need to be added to QuickBooks.
-              Example: [PaymentTerm(name="Net 60", term_id=60)]
-            - only_in_qb (list[PaymentTerm]): Terms present in QB but not in Excel.
-              Example: [PaymentTerm(name="Due on Receipt", term_id=0)]
-            - matching_count (int): Count of terms with identical ID and name.
-              Example: 5
-    """
+    """Compare Excel and QuickBooks payment terms by ID and name."""
+    # Convert lists to dictionaries for fast lookup by term_id
     excel_dict = {term.term_id: term.name for term in excel_terms}
     qb_dict = {term.term_id: term.name for term in qb_terms}
 
@@ -203,18 +182,18 @@ def compare_payment_terms(
     only_in_qb = []
     matching_count = 0
 
-    # Check for terms in Excel
+    # Compare Excel terms against QuickBooks
     for term_id, excel_name in excel_dict.items():
-        if term_id in qb_dict:
-            qb_name = qb_dict[term_id]
-            if excel_name == qb_name:
+        qb_name = qb_dict.get(term_id)
+        if qb_name is not None:
+            if qb_name == excel_name:
                 matching_count += 1
             else:
                 same_id_diff_name.append((excel_name, qb_name, term_id))
         else:
             only_in_excel.append(PaymentTerm(name=excel_name, term_id=term_id))
 
-    # Check for terms only in QuickBooks
+    # Find terms that are only in QuickBooks
     for term_id, qb_name in qb_dict.items():
         if term_id not in excel_dict:
             only_in_qb.append(PaymentTerm(name=qb_name, term_id=term_id))
