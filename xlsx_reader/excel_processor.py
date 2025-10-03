@@ -195,7 +195,43 @@ def compare_payment_terms(
             - matching_count (int): Count of terms with identical ID and name.
               Example: 5
     """
-    raise NotImplementedError("Function not yet implemented")
+    # 1. Convert lists to dictionaries for O(1) lookups by term_id
+    excel_id_map: dict[int, PaymentTerm] = {term.term_id: term for term in excel_terms}
+    qb_id_map: dict[int, PaymentTerm] = {term.term_id: term for term in qb_terms}
+
+    # Get the set of all unique IDs present in either list
+    all_ids = set(excel_id_map.keys()) | set(qb_id_map.keys())
+
+    comparison_results = TermComparison(
+        same_id_diff_name=[], only_in_excel=[], only_in_qb=[], matching_count=0
+    )
+
+    # 2. Iterate over all unique IDs to perform comparisons
+    for term_id in all_ids:
+        excel_term = excel_id_map.get(term_id)
+        qb_term = qb_id_map.get(term_id)
+
+        # Case 1: ID is in both Excel and QB
+        if excel_term and qb_term:
+            if excel_term.name == qb_term.name:
+                # Same ID, Same Name
+                comparison_results.matching_count += 1
+            else:
+                # Same ID, Different Name
+                comparison_results.same_id_diff_name.append(
+                    (excel_term.name, qb_term.name, term_id)
+                )
+        # Case 2: ID is only in Excel
+        elif excel_term:
+            # Only in Excel (needs to be added to QB)
+            comparison_results.only_in_excel.append(excel_term)
+
+        # Case 3: ID is only in QB
+        elif qb_term:
+            # Only in QB
+            comparison_results.only_in_qb.append(qb_term)
+
+    return comparison_results
 
 
 def create_payment_terms_batch_qbxml(payment_terms: list[PaymentTerm]) -> str:
