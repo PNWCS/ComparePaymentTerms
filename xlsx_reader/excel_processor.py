@@ -207,13 +207,10 @@ def compare_payment_terms(
     for excel_term in excel_terms:
         qb_name = qb_terms_dict.get(excel_term.term_id)
         if qb_name is None:
-            # Term ID not found in QB - needs to be added
             only_in_excel.append(excel_term)
         elif qb_name != excel_term.name:
-            # Term ID found but names differ
             same_id_diff_name.append((excel_term.name, qb_name, excel_term.term_id))
         else:
-            # Exact match
             matching_count += 1
 
     # Check QB terms against Excel terms to find those only in QB
